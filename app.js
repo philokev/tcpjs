@@ -1,4 +1,5 @@
 var net = require('net');
+var cfenv = require("cfenv");
  
 var sockets = [];
  
@@ -65,4 +66,4 @@ function newSocket(socket) {
 var server = net.createServer(newSocket);
  
 // Listen on port 8888
-server.listen(80);
+server.listen(cfenv.port || 8888);
