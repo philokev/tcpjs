@@ -1,28 +1,57 @@
-/*eslint-env node*/
-
-//------------------------------------------------------------------------------
-// node.js starter application for Bluemix
-//------------------------------------------------------------------------------
-
-// This application uses express as its web server
-// for more info, see: http://expressjs.com
-var express = require('express');
-
-// cfenv provides access to your Cloud Foundry environment
-// for more info, see: https://www.npmjs.com/package/cfenv
-var cfenv = require('cfenv');
-
-// create a new express server
-var app = express();
-
-// serve the files out of ./public as our main files
-app.use(express.static(__dirname + '/public'));
-
-// get the app environment from Cloud Foundry
-var appEnv = cfenv.getAppEnv();
-
-// start server on the specified port and binding host
-app.listen(appEnv.port, '0.0.0.0', function() {
-  // print a message when the server starts listening
-  console.log("server starting on " + appEnv.url);
-});
+var net = require('net');
+ 
+var sockets = [];
+ 
+/*
+ * Cleans the input of carriage return, newline
+ */
+function cleanInput(data) {
+	return data.toString().replace(/(\r\n|\n|\r)/gm,"");
+}
+ 
+/*
+ * Method executed when data is received from a socket
+ */
+function receiveData(socket, data) {
+	var cleanData = cleanInput(data);
+	if(cleanData === "@quit") {
+		socket.end('Goodbye!\n');
+	}
+	else {
+		for(var i = 0; i<sockets.length; i++) {
+			if (sockets[i] !== socket) {
+				sockets[i].write(data);
+			}
+		}
+	}
+}
+ 
+/*
+ * Method executed when a socket ends
+ */
+function closeSocket(socket) {
+	var i = sockets.indexOf(socket);
+	if (i != -1) {
+		sockets.splice(i, 1);
+	}
+}
+ 
+/*
+ * Callback method executed when a new TCP socket is opened.
+ */
+function newSocket(socket) {
+	sockets.push(socket);
+	socket.write('Welcome to the Telnet server!\n');
+	socket.on('data', function(data) {
+		receiveData(socket, data);
+	})
+	socket.on('end', function() {
+		closeSocket(socket);
+	})
+}
+ 
+// Create a new server and provide a callback for when a connection occurs
+var server = net.createServer(newSocket);
+ 
+// Listen on port 8888
+server.listen(8888);
