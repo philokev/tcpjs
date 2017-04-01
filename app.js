@@ -25,7 +25,13 @@ function receiveData(socket, data) {
 		}
 	}
 }
- 
+
+function publishData(socket) {
+	for(var i = 0; i<sockets.length; i++) {
+		socket.write("idle\n");
+	}
+}
+
 /*
  * Method executed when a socket ends
  */
@@ -44,14 +50,19 @@ function newSocket(socket) {
 	socket.write('Welcome to the Telnet server!\n');
 	socket.on('data', function(data) {
 		receiveData(socket, data);
+		//console.log(data);
 	})
 	socket.on('end', function() {
 		closeSocket(socket);
 	})
+	socket.on('timeout', function() {
+		publishData(socket);
+	})
+	socket.setTimeout(2000);
 }
  
 // Create a new server and provide a callback for when a connection occurs
 var server = net.createServer(newSocket);
  
 // Listen on port 8888
-server.listen(8888);
+server.listen(8080);
